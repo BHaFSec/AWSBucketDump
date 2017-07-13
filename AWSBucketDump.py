@@ -30,8 +30,7 @@ def print_banner():
 
 def main():
         parser = ArgumentParser()
-        parser.add_argument("-D", dest="download", required=False, action="store_true", default=False, help="Download files. This requires significant diskspace") 
-        parser.add_argument("-d", dest="savedir", required=False, default=False, help="if -D, then -d 1 to create save directories for each bucket with results.")
+        parser.add_argument("-D", dest="download", required=False, action="store_true", default=False, help="Download files. This requires significant diskspace")
         parser.add_argument("-l", dest="hostlist", required=True, help="") 
         parser.add_argument("-g", dest="grepwords", required=False, help="Provide a wordlist to grep for")
         parser.add_argument("-m", dest="maxsize", required=False, help="Maximum file size to download.")
@@ -85,14 +84,9 @@ def main():
         responseFile.close()
         masterList.close()
         cleanUp()
-        if arguments.download and arguments.savedir:
-                print("Downloads enabled (-D), and save directories (-d) for each host will be created/used")
-                downloadFiles(arguments.maxsize, arguments.savedir)
-        elif arguments.download and not arguments.savedir:
-                print("Downloads enabled (-D), and will be saved to current directory")
+        if arguments.download == True:
                 downloadFiles(arguments.maxsize)
-        else:
-                print("Downloads were not enabled (-D), not saving results locally.")
+                        
 
 def cleanUp():
         print("Cleaning Up Files")
@@ -105,7 +99,7 @@ def cleanUp():
         os.remove("interestingFiles.txt")
         os.remove("responseFile.txt")
         
-def downloadFiles(maxsize, mkdir = False):
+def downloadFiles(maxsize):
         MAX_SIZE = int(maxsize)
         print(MAX_SIZE)
         print("Beginning File Download, this may take some time..")
@@ -120,20 +114,6 @@ def downloadFiles(maxsize, mkdir = False):
                                 if local_filename =="":
                                         print("Directory..\n")
                                 else:
-                                        if mkdir:
-                                                local_savedir = (line.split('/')[-2]).rstrip()
-                                                # assign new path + filename for result for use in save below
-                                                local_filename = "".join("./%s/%s") % (local_savedir, local_filename)
-                                                # check if dir for host exists, if not create it
-                                                if not os.path.exists("./%s" % local_savedir):
-                                                        print("Creating directory for host: (%s)" % local_savedir)
-                                                        os.mkdir(local_savedir)
-                                                else:
-                                                        print("Using existing directory for host: (%s)" % local_savedir)
-
-                                                print("Saving file to: %s") % local_filename
-
-
                                         r = requests.get(line.rstrip(), stream=True)
                                         if int(r.headers['Content-Length']) > MAX_SIZE:
                                                 print("This file is greater than the specified max size.. skipping..\n")
@@ -159,19 +139,18 @@ def status200(response,grepList,line):
                         Keys.append(child['Key'])
         except:
                pass
-        # make greplist optional, save everything if not supplied
         for lines in grepList:
-            lines = (str(lines)).rstrip()
-            for words in Keys:
-                words = (str(words)).rstrip()
-                if lines in words:
-                    s = requests.get("http://"+line.rstrip()+".s3.amazonaws.com/"+words)
-                if s.status_code != 200:
-                    print("Received %s on %s" % (s.status_code, words))
-                else:
-                    interest.append("http://"+line.rstrip()+".s3.amazonaws.com/"+words+"\n")
-                 s.close()
-
+                lines = (str(lines)).rstrip()
+                for words in Keys:
+                        words = (str(words)).rstrip()
+                        if lines in words:
+                                s = requests.get("http://"+line.rstrip()+".s3.amazonaws.com/"+words)
+                                if s.status_code != 200:
+                                        print("")
+                                else:
+                                        interest.append("http://"+line.rstrip()+".s3.amazonaws.com/"+words+"\n")
+                                s.close()
         return(interest)
+
 if __name__ == "__main__":
     main()                  
